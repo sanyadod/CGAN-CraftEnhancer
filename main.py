@@ -1,4 +1,4 @@
-# 17th july
+# 20th july
 import torch
 import torchvision
 from torchvision import datasets, transforms
@@ -18,7 +18,7 @@ import numpy as np
 json_dir = "/home/cv-gpu-1/sanya_workspace/IDD_dataset/json"
 image_dir = "/home/cv-gpu-1/sanya_workspace/IDD_dataset/no_box"
 generator_data = "/home/cv-gpu-1/sanya_workspace/IDD_dataset/generator/g_data"
-discriminator_data = "/home/cv-gpu-1/sanya_workspace/IDD_dataset/discriminator"
+discriminator_data = "/home/cv-gpu-1/sanya_workspace/IDD_dataset/discriminator/d_data"
 
 if not os.path.isdir(generator_data):
     os.makedirs(generator_data)
@@ -189,8 +189,6 @@ class build_unet(nn.Module):
         d3 = self.d3(d2, s2)
         d4 = self.d4(d3, s1)
         
-        
-
         """ Classifier """
         outputs = self.outputs(d4)
 
@@ -205,6 +203,7 @@ if not os.path.exists(sample_dir):
     os.makedirs(sample_dir)
 
 criterion = nn.CrossEntropyLoss() # loss function
+criterion2 = nn.MSELoss()
 d_optimizer = torch.optim.Adam(D.parameters(), lr=0.0002) # optimizer for discriminator
 g_optimizer = torch.optim.Adam(G.parameters(), lr=0.0002) # optimizer for generator
 
@@ -245,17 +244,23 @@ def train_generator(img_g):
     labels = torch.ones(img_g.shape[0],1).to(device) # to trick the discrimintor we assume the labels to be 1
     pred = D(fake_images) # labels calculated by the discriminator
     g_loss = criterion(pred, labels)
+    loss2 = criterion2(fake_images, img_g)
     
+    loss3 = g_loss + loss2
     reset_grad()
-    g_loss.backward()
+ 
+    loss3.backward()
     g_optimizer.step()
 
-    return g_loss, fake_images
+    return g_loss, fake_images, loss2
 
 # create a directory to save the images by the generator
 sample_dir = 'samples'
 if not os.path.exists(sample_dir):
     os.makedirs(sample_dir)
+
+def NormalizeTensor(arr):
+    return ((arr - arr.min()) / (arr.max() - arr.min()))
 
 # to save the images by the generator
 def save_fake_images(img_g, index):
@@ -263,7 +268,11 @@ def save_fake_images(img_g, index):
     i = i.reshape(img_g.shape[0],3,224,224).cpu().detach().numpy()
     img = i[0]
     img = np.copy(img.transpose(-1,1,0))
+    img = NormalizeTensor(img)*255
+    img = img.astype(np.uint8)
     cv2.imwrite(str(index)+"_img.jpg",img)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    cv2.imwrite(str(index)+"_img_withRGB.jpg",img)
  
 def init_weights(net, init_type='normal', gain=0.02):
     def init_func(m):
@@ -280,7 +289,7 @@ def init_weights(net, init_type='normal', gain=0.02):
 init_weights(G)
 G = G.cuda()
 
-
+ 
 # train the generator and discriminator with 30 epochs
 total_step = len(dataloader_g)
 d_losses, g_losses, real_scores, fake_scores = [], [], [], []
@@ -296,10 +305,10 @@ for epoch in tqdm(range(50)):
          
             # training
             d_loss = train_discriminator(img_d, img_g)
-            g_loss, fake_images = train_generator(img_g)
-
-
-            if (i+1) % 500 == 0:
+            g_loss, fake_images, loss2 = train_generator(img_g)
+        
+            if (i+1) % 50 == 0:
+                print('loss:', loss2)
                 d_losses.append(d_loss.item())
                 g_losses.append(g_loss.item())
 
