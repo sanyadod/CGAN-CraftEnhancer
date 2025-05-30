@@ -4,7 +4,7 @@ This project implements a Conditional Generative Adversarial Network (CGAN) usin
 
 ---
 
-## 🎯 Project Goal
+## Project Goal
 
 To develop a GAN-based enhancement pipeline that:
 - Detects and corrects low-quality predictions in craft images
@@ -13,7 +13,7 @@ To develop a GAN-based enhancement pipeline that:
 
 ---
 
-## 🛠️ Features
+## Features
 
 - U-Net-based Generator architecture
 - WideResNet-50 (pretrained) used as a Discriminator
@@ -24,7 +24,7 @@ To develop a GAN-based enhancement pipeline that:
 
 ---
 
-## 🧠 Architecture Overview
+## Architecture Overview
 
 ### Generator (U-Net):
 - Encoder-decoder structure with skip connections
@@ -39,7 +39,7 @@ To develop a GAN-based enhancement pipeline that:
 
 ---
 
-## 📂 Dataset Assumptions
+## Dataset Assumptions
 
 The project assumes you are using an IDD-like dataset with:
 - Raw images in `/IDD_dataset/no_box/`
